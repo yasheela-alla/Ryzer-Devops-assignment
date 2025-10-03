@@ -24,15 +24,4 @@ build
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Documentation
-README.md
-*.md
-
-# Docker
-Dockerfile
-docker-compose.yml
 .dockerignore
