@@ -19,3 +19,6 @@ artifacts:
   files:
     - '**/*'
   base-directory: '.next'
+cache:
+  paths:
+    - 'node_modules/**/*'
