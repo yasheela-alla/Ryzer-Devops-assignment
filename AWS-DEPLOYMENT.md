@@ -1,29 +1,59 @@
-# AWS Deployment Guide – Ryzer Tokenized Assets
+# Ryzer Tokenized Assets – Local & AWS Deployment Guide
 
 ## Prerequisites
 - Node.js 18+
 - Git
 - VS Code
 - AWS account
+- AWS CLI (optional but recommended)
 
+## 1. Run Locally
 
-## 1. Build the Static Site
+### Install Dependencies (First Time)
 ```bash
-npm run build
+npm install
 ````
 
-This generates the `out/` folder with all static files.
+### Start Development Server
 
+```bash
+npm run dev
+```
 
-## 2. Deploy to S3 (Quick Start)
+Open: [http://localhost:3000](http://localhost:3000)
 
-1. Create an S3 bucket in AWS (unique name, public access allowed).
-2. Enable **Static Website Hosting**:
+### Build for Production (Test Before AWS)
 
-   * Index document: `index.html`
-   * Error document: `404.html`
-   * Copy the website endpoint URL.
-3. Set bucket policy for public read access:
+```bash
+npm run build
+```
+
+Generates the `out/` folder with static files.
+
+## 2. Deploy to AWS
+
+### Option A: Automated (CodePipeline + S3)
+
+1. **Create S3 Bucket**
+
+   * Name: `ryzer-tokenized-assets`
+   * Uncheck "Block all public access"
+   * Enable **Static website hosting** (index.html)
+
+2. **Create CodeBuild Project**
+
+   * Source: GitHub repo
+   * Environment: Managed image, Ubuntu, Standard runtime
+   * Buildspec: `buildspec.yml` in project root
+   * Artifacts: Type S3 → Bucket `ryzer-tokenized-assets`
+
+3. **Create CodePipeline**
+
+   * Source: GitHub → `main` branch
+   * Build: CodeBuild project
+   * Deploy: S3 bucket, extract files before deploy
+
+4. **Set S3 Bucket Policy**
 
 ```json
 {
@@ -33,81 +63,85 @@ This generates the `out/` folder with all static files.
       "Effect": "Allow",
       "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::YOUR-BUCKET-NAME/*"
+      "Resource": "arn:aws:s3:::ryzer-tokenized-assets/*"
     }
   ]
 }
 ```
 
-4. Upload files:
-
-   * **AWS Console**: Drag `out/` folder and upload
-   * **AWS CLI**:
+### Option B: Manual Deployment (Quick Test)
 
 ```bash
+# 1. Build
+npm run build
+
+# 2. Configure AWS CLI
 aws configure
-aws s3 sync out/ s3://YOUR-BUCKET-NAME --delete
+
+# 3. Upload files
+aws s3 sync out/ s3://ryzer-tokenized-assets --delete
+
+# 4. Enable static website hosting
+aws s3 website s3://ryzer-tokenized-assets --index-document index.html
 ```
 
-5. Access your site via the S3 website endpoint.
+Access your site via S3 endpoint, e.g.:
+`http://ryzer-tokenized-assets.s3-website-us-east-1.amazonaws.com`
 
+---
 
-## 3. Optional: CI/CD with CodePipeline
+## 3. Troubleshooting
 
-1. Push project to GitHub.
-2. Create a CodePipeline:
+* **Cannot find module:**
 
-   * Source: GitHub repository
-   * Build: AWS CodeBuild
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
 
-     * `buildspec.yml`:
+* **Port 3000 already in use:**
+
+  * Windows:
+
+    ```bash
+    netstat -ano | findstr :3000
+    taskkill /PID <PID> /F
+    ```
+  * Mac/Linux:
+
+    ```bash
+    lsof -ti:3000 | xargs kill -9
+    ```
+
+* **Build fails in CodeBuild:**
+
+  * Check CloudWatch logs
+  * Ensure `buildspec.yml` exists in root
+  * Node.js version matches local
+
+* **S3 shows 404:**
+
+  * Confirm static website hosting is enabled
+  * Check bucket policy
+  * Verify `index.html` exists in bucket root
+
+---
+
+## 4. Performance Tips
+
+* Cache dependencies in CodeBuild to reduce build time:
 
 ```yaml
-version: 0.2
-phases:
-  pre_build:
-    commands:
-      - npm install
-  build:
-    commands:
-      - npm run build
-      - npm run export
-artifacts:
-  files:
-    - '**/*'
-  base-directory: out
+cache:
+  paths:
+    - 'node_modules/**/*'
 ```
 
-* Deploy: S3 bucket
+## 5. Pre-Presentation Checklist
 
-3. Push changes → pipeline auto-builds and deploys.
-
-
-## 4. Optional: Custom Domain
-
-* Use **CloudFront + Route 53**
-* Set S3 bucket as origin
-* Enable HTTPS via ACM
-* Point your domain to CloudFront distribution
-
-
-## 5. Troubleshooting
-
-* **Port in use:** `npx kill-port 3000`
-* **Modules missing:** `rm -rf node_modules package-lock.json && npm install`
-* **Build fails:** Ensure Node.js 18+
-* **403 Forbidden on S3:** Check bucket policy and public access
-* **Files not updating:** `aws s3 sync out/ s3://YOUR-BUCKET --delete --cache-control max-age=0`
-
-> Note: S3 only supports static files. API routes require serverless hosting (Amplify/Lambda). Current app uses mock data, so static deployment works.
-
-
-## 6. Quick Commands
-
-```bash
-npm install      # Install dependencies
-npm run dev      # Run locally
-npm run build    # Build for production
-aws s3 sync out/ s3://YOUR-BUCKET-NAME --delete  # Deploy to S3
-aws s3 rm s3://YOUR-BUCKET-NAME --recursive     # Clear bucket
-```
+* [ ] `npm install` completes successfully
+* [ ] `npm run dev` works on localhost:3000
+* [ ] `npm run build` succeeds, `out/` folder exists
+* [ ] Test all features: browse assets, buy tokens, portfolio
+* [ ] Deploy to AWS S3
+* [ ] Verify live URL
