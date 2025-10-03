@@ -24,5 +24,13 @@ build
 *.swp
 *.swo
 
-.dockerignore
+
 Dockerfile
+docker-compose.yml
+
+build
+
+#logs and temp files
+logs
+*.log
+*.tmp
