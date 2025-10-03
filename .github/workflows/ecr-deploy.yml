@@ -1,0 +1,33 @@
+name: Build and Push to ECR
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::390700679982:role/GitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        run: |
+          docker build -t ryzer-tokenized-assets .
+          docker tag ryzer-tokenized-assets:latest 390700679982.dkr.ecr.us-east-1.amazonaws.com/ryzer-tokenized-assets:latest
+          docker push 390700679982.dkr.ecr.us-east-1.amazonaws.com/ryzer-tokenized-assets:latest
