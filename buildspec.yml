@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Installing dependencies...
+      - npm install
+  build:
+    commands:
+      - echo Building Next.js static site...
+      - npm run build
+      - echo Build completed successfully
+  post_build:
+    commands:
+      - echo Preparing artifacts...
+      - ls -la out/
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: out
+  discard-paths: no
+
+cache:
+  paths:
+    - 'node_modules/**/*'
