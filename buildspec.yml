@@ -1,26 +1,18 @@
 version: 0.2
 
 phases:
-  pre_build:
+  install:
+    runtime-versions:
+      nodejs: 18
     commands:
-      - echo Installing dependencies...
-      - npm install
+      - npm install -g npm@9
+      - npm ci --legacy-peer-deps
   build:
     commands:
-      - echo Building Next.js static site...
       - npm run build
-      - echo Build completed successfully
-  post_build:
-    commands:
-      - echo Preparing artifacts...
-      - ls -la out/
-
+      - npm run export
 artifacts:
   files:
     - '**/*'
   base-directory: out
-  discard-paths: no
 
-cache:
-  paths:
-    - 'node_modules/**/*'
