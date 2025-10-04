@@ -5,6 +5,8 @@ Built with **Next.js 14, TypeScript, Tailwind CSS, and Shadcn UI** to demonstrat
 
 **Developed by Yasheela Alla for [ryzer.app](https://www.ryzer.app)**
 
+<img width="1919" height="1111" alt="Screenshot 2025-10-04 155651" src="https://github.com/user-attachments/assets/7d259764-5114-49f6-8699-1d366c4a44d4" />
+
 ---
 
 ## 🚀 Quick Start (Local Setup)
