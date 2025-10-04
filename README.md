@@ -1,122 +1,268 @@
-# Ryzer Tokenized Assets Platform
+# Ryzer Tokenized Assets Platform - DevOps Implementation
 
-A modern web application for trading tokenized real estate and assets.  
-Built with **Next.js 14, TypeScript, Tailwind CSS, and Shadcn UI** to demonstrate full-stack development and production readiness.  
+Production-grade CI/CD pipeline for Next.js application using Jenkins, SonarQube, and AWS infrastructure.  
 
 **Developed by Yasheela Alla for [ryzer.app](https://www.ryzer.app)**
 
 <img width="1919" height="1111" alt="Screenshot 2025-10-04 155651" src="https://github.com/user-attachments/assets/7d259764-5114-49f6-8699-1d366c4a44d4" />
 
----
+## Project Overview
 
-## 🚀 Quick Start (Local Setup)
+Full-stack tokenized assets trading platform with automated deployment pipeline, code quality enforcement, and comprehensive monitoring.
 
-1. **Open Project in VS Code**
-   - Extract the ZIP → Open folder in VS Code
+**Tech Stack:**
+- Frontend: Next.js 14, React, TypeScript, Tailwind CSS
+- Backend: Next.js API Routes
+- DevOps: Jenkins, SonarQube, Grafana, Prometheus
+- Infrastructure: AWS EC2, Ubuntu 22.04
+- Process Management: PM2
+- Version Control: GitHub
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-
-3. **Run Development Server**
-
-   ```bash
-   npm run dev
-   ```
-
-   Visit: [http://localhost:3000](http://localhost:3000)
-
-4. **Build for Production**
-
-   ```bash
-   npm run build
-   ```
-
-   Outputs static files in the `out/` folder (ready for AWS S3).
-
-
-## 🌐 Deployment Options
-
-* **AWS S3 (Recommended):**
-
-  ```bash
-  aws s3 sync out/ s3://YOUR-BUCKET-NAME --delete
-  ```
-* **Vercel (1-click)**
-* **AWS Amplify (Next.js auto-detect)**
-
-See [AWS-DEPLOYMENT.md](./AWS-DEPLOYMENT.md) for details.
-
-
-## 🏗️ Features
-
-### Core Functionality
-
-* Asset marketplace with 6+ tokenized properties
-* Search, filter, and sort by location, price, ROI
-* Real-time price updates (every 5s)
-* Token purchase flow with validation & success animations
-* Portfolio dashboard with profit/loss tracking
-* Transaction history with search and audit trail
-* ROI calculator with monthly & annual projections
-
-## 📂 Project Structure
+## Architecture
 
 ```
-app/
-  api/              # REST API routes
-  assets/           # Marketplace page
-  portfolio/        # Portfolio dashboard
-  transactions/     # Transaction history
-components/
-  ui/               # Shadcn UI
-  buy-asset-dialog  # Purchase modal
-  roi-calculator    # ROI calculator
-scripts/
-  seed.sql          # PostgreSQL schema
+┌─────────┐     ┌─────────┐     ┌───────────┐     ┌───────────┐     ┌─────────┐
+│ GitHub  │───▶│ Jenkins │────▶│ SonarQube │───▶│   Build   │────▶│   EC2   │
+│         │     │  CI/CD  │     │  Analysis │     │  Process  │     │   App   │
+└─────────┘     └─────────┘     └───────────┘     └───────────┘     └─────────┘
+                     │                                                     │
+                     │                                                     │
+                     ▼                                                     ▼
+                ┌──────────┐                                         ┌────────┐
+                │ Grafana  │◀───────────────────────────────────────│   PM2   │
+                │ Monitring│          Prometheus Metrics             │ Process │
+                └──────────┘                                         └─────────┘
 ```
 
-## 📡 API Endpoints
+## Infrastructure
 
-* **GET /api/assets** → List all assets
-* **POST /api/buy** → Process token purchase
-* **GET /api/transactions** → Transaction history
+### Server Configuration
 
-Example:
+| Server | Purpose | Specs | Services | Ports |
+|--------|---------|-------|----------|-------|
+| jenkins-server | CI/CD + Monitoring | t2.medium, 25GB | Jenkins, Grafana, Prometheus | 8080, 3000, 9090 |
+| sonarqube-server | Code Quality | t2.medium, 25GB | SonarQube (Docker) | 9000 |
+| app-server | Application | t2.small, 20GB | Next.js, PM2 | 3000 |
 
-```json
-{
-  "assetId": 1,
-  "quantity": 5,
-  "buyerName": "Yasheela Alla"
-}
+## Pipeline Stages
+
+1. **Git Checkout** - Clone repository from GitHub
+2. **Install Dependencies** - npm install with package-lock.json
+3. **SonarQube Analysis** - Code quality and security scanning
+4. **Build Application** - Production build with optimizations
+5. **Deploy to EC2** - SSH deployment with PM2 restart
+
+
+## Quick Start
+
+### Prerequisites
+```bash
+node >= 18.0.0
+npm >= 9.0.0
+git
+AWS account with EC2 access
+GitHub account
 ```
 
----
+### Local Development
+```bash
+# Clone repository
+git clone https://github.com/yasheela-alla/Ryzer-Devops-assignment.git
+cd Ryzer-Devops-assignment
 
-## 🎯 Demo Flow
+# Install dependencies
+npm install
 
-1. **Homepage** → Key stats, animations, “How It Works”
-2. **Assets Page** → ROI calculator, real-time updates, search/filter/sort
-3. **Purchase Flow** → Buy tokens, validation, success animation
-4. **Portfolio** → Profit/loss tracking, empty state handling
-5. **Transactions** → Searchable, detailed transaction history
+# Run development server
+npm run dev
 
+# Build for production
+npm run build
 
-## ⚙️ Troubleshooting
-
-* **Port in Use:**
-
-  ```bash
-  npx kill-port 3000
-  ```
-* **Node Modules Errors:**
-
-  ```bash
-  rm -rf node_modules package-lock.json && npm install
-  ```
-* **Build Errors:** Ensure **Node.js 18+**
+# Start production server
+npm start
+```
 
 
-*"Invest in What's Real & Visible"*
+## Environment Variables
 
+```env
+# Not required for current setup
+# Future production variables:
+# DATABASE_URL=
+# API_KEY=
+# SECRET_KEY=
+```
+
+## CI/CD Configuration
+
+### Jenkins Pipeline
+Location: Jenkins → Ryzer-DevOps-Pipeline
+
+Key configurations:
+- NodeJS 20.x runtime
+- SonarQube integration
+- SSH agent for deployment
+- Automatic GitHub webhook triggers
+
+### SonarQube
+Project: `ryzer-devops`
+Quality Profile: Sonar way (default)
+Quality Gate: Enforced on pipeline
+
+### PM2 Process Manager
+```bash
+pm2 start npm --name "ryzer-app" -- start
+pm2 save
+pm2 startup
+```
+
+## Monitoring
+
+### Grafana Dashboards
+- Node Exporter Full (ID: 1860)
+- System metrics visualization
+- Real-time monitoring
+
+### Prometheus Targets
+- Jenkins: http://localhost:8080/prometheus
+- Node Exporter: http://localhost:9100/metrics
+- Prometheus: http://localhost:9090
+
+## Troubleshooting
+
+### Common Issues
+
+**Pipeline fails at SonarQube stage:**
+```bash
+# Verify SonarQube is running
+docker ps --filter name=sonarqube
+
+# Check SonarQube logs
+docker logs sonarqube
+
+# Verify token in Jenkins credentials
+```
+
+**App not starting with PM2:**
+```bash
+# Check PM2 logs
+pm2 logs ryzer-app
+
+# Verify Next.js configuration
+cat next.config.mjs
+
+# Rebuild application
+npm run build
+pm2 restart ryzer-app
+```
+
+**Grafana shows no data:**
+```bash
+# Verify Prometheus is running
+ps aux | grep prometheus
+
+# Check Prometheus targets
+curl localhost:9090/api/v1/targets
+
+# Restart Prometheus
+pkill prometheus
+cd ~/prometheus-2.47.0.linux-amd64
+nohup ./prometheus --config.file=prometheus.yml > prometheus.log 2>&1 &
+```
+
+### Debug Commands
+
+```bash
+# Check service status
+systemctl status jenkins
+systemctl status grafana-server
+docker ps
+
+# View logs
+sudo journalctl -u jenkins -f
+docker logs sonarqube -f
+pm2 logs ryzer-app --lines 50
+
+# Check ports
+sudo netstat -tlnp | grep LISTEN
+
+# Check disk space
+df -h
+
+# Check memory
+free -h
+```
+
+## Performance Optimization
+
+### Build Optimization
+- npm ci for faster, deterministic installs
+- node_modules caching in buildspec
+- Incremental builds with Next.js
+- Production optimizations enabled
+
+### Application Performance
+- Server-side rendering
+- Code splitting
+- Image optimization
+- Static generation where applicable
+
+### Infrastructure
+- PM2 cluster mode for multi-core usage
+- Prometheus metric caching
+- Grafana query optimization
+
+## Security Best Practices
+
+1. **Credentials Management**
+   - No credentials in code
+   - Jenkins credentials store
+   - SSH key-based authentication
+
+2. **Network Security**
+   - Security groups with least privilege
+   - SSH limited to required ports
+   - Application firewall rules
+
+3. **Code Security**
+   - SonarQube security scanning
+   - Dependency vulnerability checks
+   - Regular security updates
+
+4. **Access Control**
+   - IAM roles for AWS services
+   - Jenkins user authentication
+   - SonarQube access tokens
+
+## Cost Optimization
+
+### Current Monthly Cost: ~$72
+
+**Breakdown:**
+- 2x t2.medium: ~$48/month
+- 1x t2.small: ~$17/month
+- EBS storage (70GB): ~$7/month
+- Data transfer: ~$0.45/month
+
+**Optimization Strategies:**
+- Stop instances when not in use
+- Use Reserved Instances (save 30-70%)
+- Implement auto-scaling
+- Use Spot Instances for non-critical workloads
+- Elastic IPs only when instances running
+  
+
+## Testing
+
+### Local Testing
+```bash
+npm test                 # Run unit tests
+npm run lint            # Lint code
+npm run type-check      # TypeScript checks
+```
+
+
+## License
+
+This project is part of the Ryzer DevOps internship assignment.
