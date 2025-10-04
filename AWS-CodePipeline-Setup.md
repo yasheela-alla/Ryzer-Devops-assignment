@@ -29,6 +29,9 @@ GitHub → AWS CodePipeline → AWS CodeBuild → Amazon S3 → CloudFront (opti
 6. Acknowledge warning
 7. Create bucket
 
+<img width="1285" height="622" alt="Screenshot 2025-10-03 131256" src="https://github.com/user-attachments/assets/84f9f3f3-4ad9-402a-9dbe-9dd15ce74b60" />
+
+
 **CLI:**
 ```bash
 aws s3 mb s3://ryzer-tokenized-assets-demo --region us-east-1
@@ -170,6 +173,9 @@ git push origin main
 
 Create build project.
 
+<img width="1405" height="587" alt="Screenshot 2025-10-03 131124" src="https://github.com/user-attachments/assets/75173652-b049-4003-85b0-84a80723287c" />
+
+
 ### Test Build
 
 Click "Start build" to verify configuration works.
@@ -238,6 +244,9 @@ Click Next.
 - Verify all stages
 - Create pipeline
 
+<img width="1919" height="625" alt="Screenshot 2025-10-03 131150" src="https://github.com/user-attachments/assets/b4358ddc-1de5-4d80-be8f-974390f35579" />
+
+
 Pipeline starts automatically.
 
 ---
@@ -262,6 +271,9 @@ Pipeline starts automatically.
 - Extracts build artifacts
 - Uploads to S3 bucket root
 - Overwrites existing files
+
+<img width="1919" height="1080" alt="Screenshot 2025-10-03 131036" src="https://github.com/user-attachments/assets/ab446464-e76c-45fa-9ff5-b3a226ab7c43" />
+
 
 ### View Logs
 
@@ -404,55 +416,6 @@ install:
 | **Total** | | **~$2.15/month** |
 
 Free tier covers most usage for demo purposes.
-
----
-
-## Enhancements
-
-### Add CloudFront CDN
-
-1. Create CloudFront distribution
-2. Origin: S3 website endpoint
-3. Default cache behavior: Redirect HTTP to HTTPS
-4. SSL certificate: Default CloudFront certificate
-5. Update pipeline to invalidate cache on deploy
-
-**Invalidation command:**
-```bash
-aws cloudfront create-invalidation \
-  --distribution-id YOUR_DISTRIBUTION_ID \
-  --paths "/*"
-```
-
-### Add SNS Notifications
-
-**Create SNS topic:**
-```bash
-aws sns create-topic --name ryzer-pipeline-notifications
-```
-
-**Subscribe to topic:**
-```bash
-aws sns subscribe \
-  --topic-arn arn:aws:sns:us-east-1:ACCOUNT_ID:ryzer-pipeline-notifications \
-  --protocol email \
-  --notification-endpoint your-email@example.com
-```
-
-**Add to CodePipeline:**
-1. Edit pipeline
-2. Add notification rule
-3. Select events: All pipeline events
-4. Target: SNS topic created above
-
-### Add Manual Approval
-
-Between build and deploy:
-1. Edit pipeline
-2. Add stage after Build
-3. Add action group
-4. Action provider: Manual approval
-5. SNS topic: Optional for notifications
 
 ---
 
