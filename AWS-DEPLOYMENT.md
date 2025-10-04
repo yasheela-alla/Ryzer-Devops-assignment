@@ -1,355 +1,578 @@
 # AWS DevOps Deployment Guide - Ryzer Tokenized Assets
 
-## 📋 Table of Contents
+Complete CI/CD pipeline implementation using Jenkins, SonarQube, and AWS infrastructure.
 
-1. [Prerequisites](#prerequisites)
-2. [Quick Local Test with Docker](#quick-local-test-with-docker)
-3. [AWS Deployment Methods](#aws-deployment-methods)
-    - [Method 1: AWS Amplify (Easiest - 5 Minutes)](#method-1-aws-amplify)
-    - [Method 2: AWS CodePipeline + S3 (Professional CI/CD)](#method-2-aws-codepipeline--s3)
-    - [Method 3: Docker + ECR + ECS (Advanced Container Deployment)](#method-3-docker--ecr--ecs)
-4. [Monitoring & Best Practices](#monitoring--best-practices)
-5. [Quick Commands Cheat Sheet](#quick-commands-cheat-sheet)
-6. [Cost Breakdown](#cost-breakdown-monthly-estimates)
+## Architecture
+
+```
+GitHub → Jenkins (CI/CD) → SonarQube (Code Quality) → EC2 (Next.js App) → Grafana (Monitoring)
+```
+
+## Infrastructure Components
+
+| Server | Purpose | Instance Type | Services | Port |
+|--------|---------|---------------|----------|------|
+| Jenkins Server | CI/CD orchestration, monitoring | t2.medium | Jenkins, Grafana, Prometheus | 8080, 3000, 9090 |
+| SonarQube Server | Code quality analysis | t2.medium | SonarQube (Docker) | 9000 |
+| App Server | Application hosting | t2.small | Next.js, PM2 | 3000 |
+
+---
 
 ## Prerequisites
 
-### Required Tools
-
+### Tools
 ```bash
-# Check if you have these installed:
-node --version    # Need v18 or higher
-npm --version     # Need v9 or higher
-git --version     # Any recent version
-docker --version  # Optional but recommended
-````
+node --version    # v18+
+npm --version     # v9+
+git --version
+aws --version
+```
 
-### AWS Account Setup
-
-1. Create an AWS account: [https://aws.amazon.com](https://aws.amazon.com)
-2. Install AWS CLI: [https://aws.amazon.com/cli/](https://aws.amazon.com/cli/)
-3. Configure AWS credentials:
-
+### AWS Setup
 ```bash
 aws configure
-# Enter your:
-# - AWS Access Key ID
-# - AWS Secret Access Key
-# - Default region (e.g., us-east-1)
-# - Output format: json
+# AWS Access Key ID: YOUR_KEY
+# AWS Secret Access Key: YOUR_SECRET
+# Region: us-east-1
+# Output: json
 ```
 
-### GitHub Setup
-
-1. Create a GitHub account (if needed)
-2. Create a new repo: `ryzer-tokenized-assets`
-3. Push your code:
-
+### GitHub Repository
 ```bash
-git init
-git add .
-git commit -m "Initial commit - Ryzer Tokenized Assets Platform"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/REPO-NAME.git
-git push -u origin main
-```
-
-## Quick Local Test with Docker
-
-### Step 1: Build Docker Image
-
-```bash
-docker build -t ryzer-app .
-```
-
-### Step 2: Run Container
-
-```bash
-docker run -p 3000:3000 ryzer-app
-```
-
-### Step 3: Test Locally
-
-Open your browser: `http://localhost:3000`
-
-### Alternative: Docker Compose
-
-```bash
-docker-compose up
-```
-
-To stop:
-
-```bash
-docker-compose down
-```
-
-## AWS Deployment Methods
-
-Choose based on your demo needs:
-
-| Method                | Difficulty | Time   | Best For                         |
-| --------------------- | ---------- | ------ | -------------------------------- |
-| **AWS Amplify**       | ⭐ Easy     | 5 min  | Quick demo, automatic CI/CD      |
-| **CodePipeline + S3** | ⭐⭐ Medium  | 15 min | Professional CI/CD pipeline      |
-| **Docker + ECS**      | ⭐⭐⭐ Hard   | 30 min | Container orchestration showcase |
-
-
-## Method 1: AWS Amplify
-
-**Best for:** Quick demo with automatic deployments
-
-### Step 1: Open Amplify Console
-
-1. Go to AWS Console
-2. Search for “Amplify”
-3. Click “Get Started” under **Amplify Hosting**
-
-### Step 2: Connect GitHub Repo
-
-1. Choose GitHub as the source
-2. Authorize Amplify
-3. Select repo: `ryzer-tokenized-assets`
-4. Select branch: `main`
-5. Click **Next**
-
-### Step 3: Build Settings (Auto-detected)
-
-```yaml
-version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - npm ci
-    build:
-      commands:
-        - npm run build
-  artifacts:
-    baseDirectory: out
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-```
-
-### Step 4: Deploy
-
-1. Click **Next**
-2. Review settings
-3. Click **Save and Deploy**
-
-### Step 5: Access App
-
-Example URL:
-`https://main.d1234abcd.amplifyapp.com`
-
-✅ **Done! Auto-deploys on every GitHub push**
-
-
-## Method 2: AWS CodePipeline + S3
-
-**Best for:** Professional CI/CD demonstration
-
-### Architecture
-
-```
-GitHub → CodePipeline → CodeBuild → S3 → CloudFront (optional)
-```
-
-### Step 1: Create S3 Bucket
-
-```bash
-aws s3 mb s3://ryzer-tokenized-assets-demo --region us-east-1
-```
-
-Or via Console:
-
-* Uncheck "Block all public access"
-* Enable static hosting
-
-### Step 2: Enable Static Website Hosting
-
-```bash
-aws s3 website s3://ryzer-tokenized-assets-demo \
-  --index-document index.html \
-  --error-document 404.html
-```
-
-### Step 3: Set Bucket Policy
-
-`bucket-policy.json`:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "PublicReadGetObject",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::ryzer-tokenized-assets-demo/*"
-    }
-  ]
-}
-```
-
-Apply it:
-
-```bash
-aws s3api put-bucket-policy \
-  --bucket ryzer-tokenized-assets-demo \
-  --policy file://bucket-policy.json
-```
-
-### Step 4: Create CodeBuild Project
-
-Follow AWS Console instructions (details unchanged)
-
-### Step 5: Create CodePipeline
-
-Follow AWS Console instructions (details unchanged)
-
-### Step 6: Watch It Deploy 🚀
-
-Check site at:
-`http://ryzer-tokenized-assets-demo.s3-website-us-east-1.amazonaws.com`
-
-### Step 7: Test Auto-Deploy
-
-```bash
-git add .
-git commit -m "Test auto-deployment"
-git push
-```
-
-## Method 3: Docker + ECR + ECS
-
-**Best for:** Demonstrating container orchestration skills
-
-### Architecture
-
-```
-GitHub → CodePipeline → CodeBuild → ECR → ECS Fargate
-```
-
-### Step 1: Create ECR Repository
-
-```bash
-aws ecr create-repository \
-  --repository-name ryzer-tokenized-assets \
-  --region us-east-1
-```
-
-### Step 2: Build and Push Docker Image
-
-```bash
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin \
-  YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
-
-docker build -t ryzer-tokenized-assets .
-docker tag ryzer-tokenized-assets:latest \
-  YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/ryzer-tokenized-assets:latest
-
-docker push YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/ryzer-tokenized-assets:latest
-```
-
-### Step 3: Create ECS Cluster
-
-```bash
-aws ecs create-cluster --cluster-name ryzer-cluster --region us-east-1
-```
-
-### Step 4: Create Task Definition
-
-Create `task-definition.json` (details unchanged), then:
-
-```bash
-aws ecs register-task-definition --cli-input-json file://task-definition.json
-```
-
-### Step 5: Create ECS Service
-
-```bash
-aws logs create-log-group --log-group-name /ecs/ryzer-task
-
-aws ecs create-service \
-  --cluster ryzer-cluster \
-  --service-name ryzer-service \
-  --task-definition ryzer-task \
-  --desired-count 1 \
-  --launch-type FARGATE \
-  --network-configuration "awsvpcConfiguration={subnets=[subnet-xxxxx],securityGroups=[sg-xxxxx],assignPublicIp=ENABLED}"
-```
-
-### Step 6: Access Application
-
-```bash
-aws ecs list-tasks --cluster ryzer-cluster --service-name ryzer-service
-aws ecs describe-tasks --cluster ryzer-cluster --tasks TASK_ARN
-```
-
-Visit: `http://PUBLIC_IP:3000`
-
-
-## Monitoring & Best Practices
-
-### Monitoring with CloudWatch
-
-* Check logs: `/ecs/ryzer-task`
-* Set alarms: build failures, crashes, etc.
-
-### Cost Optimization
-
-```bash
-aws ecs update-service --cluster ryzer-cluster --service ryzer-service --desired-count 0
-aws ecs update-service --cluster ryzer-cluster --service ryzer-service --desired-count 1
-```
-
-### Security
-
-* Use **IAM roles** (never store credentials in code)
-* Use **Secrets Manager**
-* Enable **CloudTrail**
-* Add **SSL (CloudFront)**
-
-## Quick Commands Cheat Sheet
-
-```bash
-# Local Development
-npm install            # Install dependencies
-npm run dev            # Run locally
-npm run build          # Build production app
-docker-compose up      # Run with Docker
-docker-compose down    # Stop Docker
-
-# AWS Deployment
-aws s3 sync out/ s3://BUCKET-NAME --delete              # Deploy to S3
-aws ecr get-login-password | docker login ...           # Login to ECR
-docker build -t ryzer-app .                             # Build Docker image
-docker push YOUR_ECR_URL                                # Push to ECR
-aws ecs update-service ...                              # Update ECS service
-
-# Monitoring
-aws logs tail /ecs/ryzer-task --follow                  # ECS logs
-aws codebuild list-builds                               # List CodeBuild builds
-aws codepipeline get-pipeline-state ...                 # Check pipeline status
+git clone https://github.com/yasheela-alla/Ryzer-Devops-assignment.git
+cd Ryzer-Devops-assignment
 ```
 
 ---
 
-## Cost Breakdown (Monthly Estimates)
+## Part 1: Infrastructure Setup
 
-| Service                | Usage                 | Estimated Cost |
-| ---------------------- | --------------------- | -------------- |
-| **S3**                 | 1GB + 10,000 requests | ~$0.50         |
-| **CodePipeline**       | 1 active pipeline     | ~$1.00         |
-| **CodeBuild**          | 100 build minutes     | ~$1.00         |
-| **ECS Fargate**        | 1 task, running 24/7  | ~$15.00        |
-| **CloudWatch**         | Basic logging         | ~$0.50         |
-| **Total (S3 Method)**  |                       | **~$3/month**  |
-| **Total (ECS Method)** |                       | **~$18/month** |
+### Step 1: Launch EC2 Instances
 
+**Jenkins Server:**
+- Name: `jenkins-server`
+- AMI: Ubuntu Server 22.04 LTS
+- Instance Type: t2.medium
+- Key Pair: Create new `devops-key.pem`
+- Security Group: `jenkins-sg`
+  - SSH (22): 0.0.0.0/0
+  - Custom TCP (8080): 0.0.0.0/0
+  - Custom TCP (3000): 0.0.0.0/0
+- Storage: 25 GiB
+
+**SonarQube Server:**
+- Name: `sonarqube-server`
+- AMI: Ubuntu Server 22.04 LTS
+- Instance Type: t2.medium
+- Key Pair: Use existing `devops-key.pem`
+- Security Group: `sonarqube-sg`
+  - SSH (22): 0.0.0.0/0
+  - Custom TCP (9000): 0.0.0.0/0
+- Storage: 25 GiB
+
+**App Server:**
+- Name: `app-server`
+- AMI: Ubuntu Server 22.04 LTS
+- Instance Type: t2.small
+- Key Pair: Use existing `devops-key.pem`
+- Security Group: `app-sg`
+  - SSH (22): 0.0.0.0/0
+  - Custom TCP (3000): 0.0.0.0/0
+- Storage: 20 GiB
+
+---
+
+## Part 2: Jenkins Server Setup
+
+### SSH Connection
+```bash
+ssh -i devops-key.pem ubuntu@<JENKINS_IP>
+```
+
+### Install Java & Jenkins
+```bash
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+sudo apt update
+sudo apt install -y jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+# Get initial password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+### Access Jenkins
+```
+http://<JENKINS_IP>:8080
+```
+- Install suggested plugins
+- Create admin user: `admin/admin123`
+
+### Install Required Plugins
+Navigate to: Manage Jenkins → Plugins → Available plugins
+
+Install:
+- NodeJS
+- SonarQube Scanner
+- SSH Agent
+- Git
+- Pipeline
+
+Restart Jenkins after installation.
+
+### Configure Tools
+
+**Manage Jenkins → Tools:**
+
+**NodeJS:**
+- Name: `NodeJS-20`
+- Install automatically: ✓
+- Version: NodeJS 20.x.x
+
+**SonarQube Scanner:**
+- Name: `SonarQubeScanner`
+- Install automatically: ✓
+- Version: Latest
+
+---
+
+## Part 3: SonarQube Server Setup
+
+### SSH Connection
+```bash
+ssh -i devops-key.pem ubuntu@<SONARQUBE_IP>
+```
+
+### Install Docker & SonarQube
+```bash
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ubuntu
+exit
+```
+
+Reconnect and start SonarQube:
+```bash
+ssh -i devops-key.pem ubuntu@<SONARQUBE_IP>
+docker run -d --name sonarqube -p 9000:9000 sonarqube:lts-community
+```
+
+### Access SonarQube
+```
+http://<SONARQUBE_IP>:9000
+```
+- Login: `admin/admin`
+- Change password to: `admin123`
+
+### Create Project
+1. Projects → Create Project → Manually
+2. Project display name: `Ryzer DevOps`
+3. Project key: `ryzer-devops`
+4. Main branch: `main`
+5. Set Up → Use the global setting
+6. Create project
+
+### Generate Token
+1. My Account → Security
+2. Generate Token:
+   - Name: `jenkins-scanner`
+   - Type: Global Analysis Token
+   - Expires: 30 days
+3. Copy token (starts with `squ_`)
+
+---
+
+## Part 4: App Server Setup
+
+### SSH Connection
+```bash
+ssh -i devops-key.pem ubuntu@<APP_IP>
+```
+
+### Install Node.js & Git
+```bash
+sudo apt update
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs git
+```
+
+### Clone & Setup Application
+```bash
+git clone https://github.com/yasheela-alla/Ryzer-Devops-assignment.git
+cd Ryzer-Devops-assignment
+```
+
+### Fix Next.js Configuration
+```bash
+nano next.config.mjs
+```
+Remove or comment out: `output: 'export'`
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // output: 'export',  // Removed for server-side rendering
+};
+
+export default nextConfig;
+```
+
+### Build & Deploy
+```bash
+npm install
+npm run build
+sudo npm install -g pm2
+pm2 start npm --name "ryzer-app" -- start
+pm2 save
+pm2 startup
+```
+
+Verify:
+```bash
+pm2 status
+curl localhost:3000
+```
+
+---
+
+## Part 5: Jenkins Pipeline Configuration
+
+### Configure SonarQube Connection
+
+**Manage Jenkins → System → SonarQube servers:**
+- Name: `SonarQube`
+- Server URL: `http://<SONARQUBE_IP>:9000`
+- Server authentication token:
+  - Add → Jenkins → Secret text
+  - Secret: `<SONARQUBE_TOKEN>`
+  - ID: `sonarqube-scanner-token`
+  - Description: `SonarQube Scanner Token`
+
+### Add SSH Credentials
+
+**Manage Jenkins → Credentials → System → Global credentials:**
+- Add Credentials
+- Kind: SSH Username with private key
+- ID: `app-server-key`
+- Description: `App Server SSH Key`
+- Username: `ubuntu`
+- Private Key: Enter directly (paste entire `devops-key.pem` content)
+
+### Create Pipeline
+
+**New Item:**
+- Name: `Ryzer-DevOps-Pipeline`
+- Type: Pipeline
+- Description: `DevOps pipeline for Ryzer Next.js app with SonarQube analysis`
+
+**General:**
+- GitHub project: ✓
+- Project url: `https://github.com/yasheela-alla/Ryzer-Devops-assignment/`
+
+**Build Triggers:**
+- GitHub hook trigger for GITScm polling: ✓
+
+**Pipeline Script:**
+copy from Jenkinsfile
+
+Save and run: **Build Now**
+
+---
+
+## Part 6: Grafana & Prometheus Setup
+
+### Install Grafana (Jenkins Server)
+```bash
+ssh -i devops-key.pem ubuntu@<JENKINS_IP>
+
+sudo apt-get install -y apt-transport-https software-properties-common wget
+sudo wget -q -O /usr/share/keyrings/grafana.key https://apt.grafana.com/gpg.key
+echo "deb [signed-by=/usr/share/keyrings/grafana.key] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+
+sudo apt-get update
+sudo apt-get install grafana
+sudo systemctl daemon-reload
+sudo systemctl start grafana-server
+sudo systemctl enable grafana-server.service
+```
+
+### Install Prometheus & Node Exporter
+```bash
+cd ~
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+tar xvfz node_exporter-1.6.1.linux-amd64.tar.gz
+cd node_exporter-1.6.1.linux-amd64
+nohup ./node_exporter > node_exporter.log 2>&1 &
+
+cd ~
+wget https://github.com/prometheus/prometheus/releases/download/v2.47.0/prometheus-2.47.0.linux-amd64.tar.gz
+tar xvfz prometheus-2.47.0.linux-amd64.tar.gz
+cd prometheus-2.47.0.linux-amd64
+```
+
+### Configure Prometheus
+```bash
+nano prometheus.yml
+```
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  - job_name: 'jenkins'
+    metrics_path: '/prometheus'
+    static_configs:
+      - targets: ['localhost:8080']
+```
+
+Start Prometheus:
+```bash
+nohup ./prometheus --config.file=prometheus.yml > prometheus.log 2>&1 &
+```
+
+### Configure Grafana
+
+Access: `http://<JENKINS_IP>:3000`
+- Login: `admin/admin`
+- Change password to: `admin123`
+
+**Add Data Source:**
+1. Connections → Data sources → Add data source
+2. Select: Prometheus
+3. URL: `http://localhost:9090`
+4. Save & test
+
+**Import Dashboard:**
+1. Dashboards → Import
+2. Dashboard ID: `1860` (Node Exporter Full)
+3. Select Prometheus data source
+4. Import
+
+---
+
+## Challenges & Solutions
+
+### Challenge 1: SonarQube Authentication Error
+**Error:** `Not authorized. Please provide a user token in sonar.login`
+
+**Solution:**
+- Added token to Jenkins credentials store
+- Updated pipeline to use `withCredentials` for secure token injection
+
+### Challenge 2: Next.js Static Export Conflict
+**Error:** `"next start" does not work with "output: export" configuration`
+
+**Solution:**
+- Removed `output: 'export'` from `next.config.mjs`
+- Used PM2 for proper Node.js process management
+
+### Challenge 3: PM2 Process Management
+**Issue:** App not persisting after server restart
+
+**Solution:**
+```bash
+pm2 startup
+pm2 save
+```
+
+### Challenge 4: Grafana GPG Key Error
+**Error:** `GPG error: The following signatures couldn't be verified`
+
+**Solution:**
+```bash
+sudo mkdir -p /etc/apt/keyrings/
+wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+```
+
+---
+
+## Daily Startup Commands
+
+### Check Instance IPs
+AWS Console → EC2 → Instances → Note new public IPs
+
+### Start Services
+
+**Jenkins Server:**
+```bash
+ssh -i devops-key.pem ubuntu@<NEW_JENKINS_IP>
+sudo systemctl start jenkins
+sudo systemctl start grafana-server
+cd ~/prometheus-2.47.0.linux-amd64 && nohup ./prometheus --config.file=prometheus.yml > prometheus.log 2>&1 &
+```
+
+**SonarQube Server:**
+```bash
+ssh -i devops-key.pem ubuntu@<NEW_SONARQUBE_IP>
+sudo systemctl start docker
+docker start sonarqube
+```
+
+**App Server:**
+```bash
+ssh -i devops-key.pem ubuntu@<NEW_APP_IP>
+cd ~/Ryzer-Devops-assignment
+pm2 restart ryzer-app
+```
+
+### Update Jenkins Pipeline
+1. Jenkins → Ryzer-DevOps-Pipeline → Configure
+2. Update `APP_SERVER_IP` environment variable
+3. Update SonarQube URL in pipeline script
+4. Manage Jenkins → System → Update SonarQube server URL
+
+---
+
+## Verification Commands
+
+### System Health Check
+
+**Jenkins Server:**
+```bash
+systemctl is-active jenkins
+systemctl is-active grafana-server
+ps aux | grep prometheus | grep -v grep
+curl localhost:8080
+curl localhost:3000
+curl localhost:9090
+```
+
+**SonarQube Server:**
+```bash
+docker ps --filter name=sonarqube
+curl localhost:9000
+```
+
+**App Server:**
+```bash
+pm2 status
+pm2 logs ryzer-app --lines 20
+curl localhost:3000
+```
+
+---
+
+## Access URLs
+
+Replace with your current IPs:
+
+```
+Jenkins:    http://<JENKINS_IP>:8080
+SonarQube:  http://<SONARQUBE_IP>:9000
+Grafana:    http://<JENKINS_IP>:3000
+Application: http://<APP_IP>:3000
+```
+
+---
+
+## Cost Breakdown (Monthly)
+
+| Service | Usage | Cost |
+|---------|-------|------|
+| EC2 t2.medium (x2) | 730 hours | ~$48 |
+| EC2 t2.small (x1) | 730 hours | ~$17 |
+| EBS Storage (70GB) | - | ~$7 |
+| Data Transfer | ~5GB | ~$0.45 |
+| **Total** | | **~$72/month** |
+
+**Cost Optimization:**
+- Use Reserved Instances: Save 30-70%
+- Stop instances when not in use
+- Use Elastic IPs only when instances are running
+- Implement auto-scaling for production
+
+---
+
+## Production Enhancements
+
+### Security
+- [ ] Enable HTTPS with ACM certificates
+- [ ] Implement AWS Secrets Manager
+- [ ] Configure WAF rules
+- [ ] Enable CloudTrail logging
+- [ ] Set up VPC with private subnets
+
+### Scalability
+- [ ] Add Application Load Balancer
+- [ ] Configure Auto Scaling Groups
+- [ ] Implement blue-green deployments
+- [ ] Add CloudFront CDN
+- [ ] Set up RDS for database
+
+### Monitoring
+- [ ] Configure CloudWatch alarms
+- [ ] Add custom Grafana dashboards
+- [ ] Implement ELK stack for logs
+- [ ] Set up PagerDuty/Slack notifications
+- [ ] Add APM tools (New Relic/DataDog)
+
+### CI/CD
+- [ ] Add automated testing stages
+- [ ] Implement quality gates in SonarQube
+- [ ] Add staging environment
+- [ ] Configure rollback mechanisms
+- [ ] Add approval steps for production
+
+---
+
+## Quick Reference
+
+### Restart All Services
+```bash
+# Jenkins Server
+sudo systemctl restart jenkins grafana-server
+cd ~/prometheus-2.47.0.linux-amd64 && pkill prometheus && nohup ./prometheus --config.file=prometheus.yml > prometheus.log 2>&1 &
+
+# SonarQube Server  
+docker restart sonarqube
+
+# App Server
+pm2 restart ryzer-app
+```
+
+### View Logs
+```bash
+# Jenkins
+sudo journalctl -u jenkins -f
+
+# SonarQube
+docker logs sonarqube -f
+
+# App
+pm2 logs ryzer-app
+
+# Prometheus
+tail -f ~/prometheus-2.47.0.linux-amd64/prometheus.log
+```
+
+### Troubleshooting
+```bash
+# Check ports
+sudo netstat -tlnp | grep LISTEN
+
+# Check processes
+ps aux | grep -E 'jenkins|sonar|pm2|prometheus'
+
+# Check disk space
+df -h
+
+# Check memory
+free -h
+```
