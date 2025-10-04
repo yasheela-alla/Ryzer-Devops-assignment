@@ -33,7 +33,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 animate-pulse">
             <Zap className="h-4 w-4" />
-            <span>Regulated Sandbox by Qatar Financial Centre (QFC)</span>
+            <span>Regulated Sandbox by QFC</span>
           </div>
 
           <h1 className="mb-6 font-sans text-5xl font-bold leading-tight text-balance md:text-6xl lg:text-7xl">
